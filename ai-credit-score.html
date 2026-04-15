@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Credit Score Analyzer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0f1a;
+      --card: #13162a;
+      --card2: #1a1f38;
+      --border: #2a2f50;
+      --accent: #6c63ff;
+      --accent2: #00d4aa;
+      --accent3: #ff6b6b;
+      --text: #e8eaf6;
+      --muted: #7880a4;
+      --low: #00d4aa;
+      --med: #f7b731;
+      --high: #ff6b6b;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+
+    .container { max-width: 780px; margin: 0 auto; }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #6c63ff, #00d4aa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header p { color: var(--muted); margin-top: 8px; font-size: 0.95rem; }
+
+    /* Steps nav */
+    .steps-nav {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 36px;
+      flex-wrap: wrap;
+    }
+    .step-dot {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      transition: color 0.3s;
+    }
+    .step-dot.active { color: var(--accent); }
+    .step-dot.done { color: var(--accent2); }
+    .step-dot span {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700;
+      transition: all 0.3s;
+    }
+    .step-dot.active span { border-color: var(--accent); background: var(--accent); color: #fff; }
+    .step-dot.done span { border-color: var(--accent2); background: var(--accent2); color: #000; }
+    .step-sep { color: var(--border); font-size: 0.7rem; margin-top: 6px; }
+
+    /* Card */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 20px;
+    }
+    .card h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; }
+    .card .subtitle { color: var(--muted); font-size: 0.85rem; margin-bottom: 20px; }
+
+    /* Upload Zone */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(108,99,255,0.06);
+    }
+    .upload-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .upload-icon { font-size: 2.8rem; margin-bottom: 12px; }
+    .upload-zone h3 { font-size: 1rem; font-weight: 600; margin-bottom: 6px; }
+    .upload-zone p { color: var(--muted); font-size: 0.82rem; }
+    .upload-zone .formats { margin-top: 10px; }
+    .badge {
+      display: inline-block;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin: 2px;
+    }
+
+    .divider {
+      display: flex; align-items: center; gap: 12px;
+      margin: 18px 0; color: var(--muted); font-size: 0.8rem;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 10px 20px;
+      border-radius: 10px;
+      border: none;
+      font-size: 0.9rem; font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #5551e8);
+      color: #fff;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(108,99,255,0.4); }
+    .btn-secondary {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-ghost { background: transparent; color: var(--muted); font-size: 0.8rem; }
+    .btn-full { width: 100%; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+    /* File preview */
+    .file-preview {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-top: 16px;
+    }
+    .file-icon { font-size: 1.8rem; }
+    .file-info { flex: 1; }
+    .file-info strong { display: block; font-size: 0.9rem; }
+    .file-info span { color: var(--muted); font-size: 0.78rem; }
+    .file-remove { color: var(--high); cursor: pointer; font-size: 1rem; background: none; border: none; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th { color: var(--muted); font-weight: 600; text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+    td { padding: 8px 12px; border-bottom: 1px solid rgba(42,47,80,0.5); }
+    tr:last-child td { border-bottom: none; }
+    .positive { color: var(--low); }
+    .negative { color: var(--high); }
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .tag-warn { background: rgba(247,183,49,0.15); color: #f7b731; }
+    .tag-ok { background: rgba(0,212,170,0.12); color: var(--low); }
+    .tag-bad { background: rgba(255,107,107,0.12); color: var(--high); }
+
+    /* Summary grid */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .summary-tile {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .summary-tile .label { color: var(--muted); font-size: 0.75rem; margin-bottom: 4px; }
+    .summary-tile .value { font-size: 1.2rem; font-weight: 700; }
+    .summary-tile .value.up { color: var(--low); }
+    .summary-tile .value.down { color: var(--high); }
+
+    /* Form inputs */
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 6px; }
+    .form-group input {
+      width: 100%;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus { border-color: var(--accent); }
+    .form-group input::placeholder { color: var(--muted); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* Chatbot */
+    .chat-area {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .chat-msg {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .chat-msg.user { flex-direction: row-reverse; }
+    .chat-avatar {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; flex-shrink: 0;
+    }
+    .bot-avatar { background: linear-gradient(135deg, var(--accent), #5551e8); }
+    .user-avatar { background: var(--card2); border: 1px solid var(--border); }
+    .chat-bubble {
+      max-width: 85%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 0.87rem;
+      line-height: 1.5;
+    }
+    .bot-bubble {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-top-left-radius: 2px;
+    }
+    .user-bubble {
+      background: linear-gradient(135deg, var(--accent), #5551e8);
+      color: #fff;
+      border-top-right-radius: 2px;
+    }
+    .options-row {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin-top: 10px;
+    }
+    .option-btn {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 7px 14px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .option-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .option-btn.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* Score display */
+    .score-ring-wrap {
+      text-align: center;
+      margin: 24px 0;
+      position: relative;
+    }
+    .score-ring-wrap svg { overflow: visible; }
+    .score-center {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+    .score-number {
+      font-size: 2.8rem;
+      font-weight: 900;
+      line-height: 1;
+    }
+    .score-label { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+    .risk-badge {
+      display: inline-block;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-top: 10px;
+    }
+    .risk-low { background: rgba(0,212,170,0.15); color: var(--low); }
+    .risk-med { background: rgba(247,183,49,0.15); color: #f7b731; }
+    .risk-high { background: rgba(255,107,107,0.15); color: var(--high); }
+
+    /* Score breakdown */
+    .breakdown { margin: 20px 0; }
+    .breakdown-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .breakdown-label { font-size: 0.82rem; color: var(--muted); width: 180px; flex-shrink: 0; }
+    .bar-track { flex: 1; height: 8px; background: var(--card2); border-radius: 99px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 99px; transition: width 1s ease; }
+    .breakdown-val { font-size: 0.82rem; font-weight: 700; width: 36px; text-align: right; flex-shrink: 0; }
+
+    /* Insights */
+    .insight-section { margin-bottom: 24px; }
+    .insight-section h3 {
+      font-size: 0.9rem; font-weight: 700;
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 12px;
+    }
+    .insight-item {
+      display: flex; gap: 10px; align-items: flex-start;
+      margin-bottom: 10px;
+      font-size: 0.87rem;
+      line-height: 1.5;
+    }
+    .insight-icon { font-size: 1rem; margin-top: 1px; flex-shrink: 0; }
+
+    /* Improvement steps */
+    .improve-list { counter-reset: improve; }
+    .improve-item {
+      display: flex; gap: 14px; align-items: flex-start;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 10px;
+      font-size: 0.87rem;
+      line-height: 1.5;
+    }
+    .improve-num {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #5551e8);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 0.8rem; flex-shrink: 0;
+    }
+
+    /* Explanation box */
+    .explain-box {
+      background: rgba(108,99,255,0.07);
+      border: 1px solid rgba(108,99,255,0.25);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 0.86rem;
+      line-height: 1.6;
+      color: #c5c8e8;
+      margin: 16px 0;
+    }
+
+    /* Hidden */
+    .hidden { display: none !important; }
+
+    /* Loading spinner */
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-box { text-align: center; padding: 32px; }
+    .loading-box p { color: var(--muted); font-size: 0.85rem; margin-top: 12px; }
+
+    /* Alert */
+    .alert {
+      background: rgba(247,183,49,0.1);
+      border: 1px solid rgba(247,183,49,0.3);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.83rem;
+      color: #f7b731;
+      margin-bottom: 14px;
+    }
+
+    /* Restart */
+    .restart-bar {
+      text-align: center;
+      margin-top: 28px;
+    }
+
+    @media (max-width: 520px) {
+      .form-row { grid-template-columns: 1fr; }
+      .breakdown-label { width: 130px; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>AI Credit Score Analyzer</h1>
+    <p>Upload your bank statement and answer a few questions to receive your personalized AI credit score.</p>
+  </div>
+
+  <!-- Steps Nav -->
+  <div class="steps-nav" id="stepsNav">
+    <div class="step-dot active" id="sdot1"><span>1</span> Statement</div>
+    <div class="step-sep">›</div>
+    <div class="step-dot" id="sdot2"><span>2</span> Financials</div>
+    <div class="step-sep">›</div>
+    <div class="step-dot" id="sdot3"><span>3</span> Questions</div>
+    <div class="step-sep">›</div>
+    <div class="step-dot" id="sdot4"><span>4</span> Score</div>
+    <div class="step-sep">›</div>
+    <div class="step-dot" id="sdot5"><span>5</span> Insights</div>
+  </div>
+
+  <!-- ======== STEP 1 ======== -->
+  <div id="step1">
+    <div class="card">
+      <h2>Step 1 — Bank Statement</h2>
+      <p class="subtitle">Upload your statement or use a generated sample to see how the analyzer works.</p>
+
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="fileInput" accept=".pdf,.csv,.txt,.xlsx" />
+        <div class="upload-icon">📄</div>
+        <h3>Drop your bank statement here</h3>
+        <p>Click to browse or drag and drop</p>
+        <div class="formats">
+          <span class="badge">PDF</span>
+          <span class="badge">CSV</span>
+          <span class="badge">TXT</span>
+          <span class="badge">XLSX</span>
+        </div>
+      </div>
+
+      <div id="filePreview" class="hidden">
+        <div class="file-preview">
+          <div class="file-icon" id="fileIcon">📄</div>
+          <div class="file-info">
+            <strong id="fileName">file.pdf</strong>
+            <span id="fileSize">0 KB</span>
+          </div>
+          <button class="file-remove" id="fileRemove" title="Remove">✕</button>
+        </div>
+      </div>
+
+      <div class="divider">or</div>
+
+      <button class="btn btn-secondary btn-full" id="useSampleBtn">
+        ✨ Use a Sample Statement (Demo)
+      </button>
+
+      <div style="margin-top:14px;">
+        <button class="btn btn-primary btn-full" id="analyzeBtn" disabled>
+          Analyze Statement →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== STEP 1b: Loading ======== -->
+  <div id="step1loading" class="hidden">
+    <div class="card">
+      <div class="loading-box">
+        <div class="spinner"></div>
+        <p id="loadingMsg">Analyzing your bank statement…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== STEP 1c: Statement Summary ======== -->
+  <div id="step1summary" class="hidden">
+    <div class="card">
+      <h2>📊 Statement Analysis</h2>
+      <p class="subtitle" id="statementPeriod">6-Month Overview · Jan – Jun 2025</p>
+
+      <div class="summary-grid" id="summaryGrid"></div>
+
+      <h3 style="font-size:0.85rem;color:var(--muted);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Monthly Breakdown</h3>
+      <div style="overflow-x:auto;">
+        <table id="monthlyTable">
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th>Income</th>
+              <th>Spending</th>
+              <th>Net Flow</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div style="height:20px;"></div>
+      <h3 style="font-size:0.85rem;color:var(--muted);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Spending Categories</h3>
+      <table id="catTable">
+        <thead><tr><th>Category</th><th>Monthly Avg</th><th>% of Income</th></tr></thead>
+        <tbody></tbody>
+      </table>
+
+      <div id="irregularitiesBox" style="margin-top:16px;"></div>
+
+      <button class="btn btn-primary btn-full" id="toStep2Btn" style="margin-top:20px;">
+        Continue to Financial Inputs →
+      </button>
+    </div>
+  </div>
+
+  <!-- ======== STEP 2 ======== -->
+  <div id="step2" class="hidden">
+    <div class="card">
+      <h2>Step 2 — Financial Profile</h2>
+      <p class="subtitle">Enter your current financial figures. Approximate values are fine.</p>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Annual Income ($)</label>
+          <input type="number" id="annualIncome" placeholder="e.g. 75000" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Total Savings ($)</label>
+          <input type="number" id="totalSavings" placeholder="e.g. 15000" min="0" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Total Investments ($)</label>
+          <input type="number" id="totalInvestments" placeholder="e.g. 30000" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Total Debt ($)</label>
+          <input type="number" id="totalDebt" placeholder="e.g. 20000" min="0" />
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-full" id="toStep3Btn">
+        Continue to Questions →
+      </button>
+    </div>
+  </div>
+
+  <!-- ======== STEP 3 ======== -->
+  <div id="step3" class="hidden">
+    <div class="card">
+      <h2>Step 3 — Creditworthiness Questions</h2>
+      <p class="subtitle">Answer 3 short questions. Your responses affect 20% of your score.</p>
+
+      <div class="chat-area" id="chatArea"></div>
+    </div>
+  </div>
+
+  <!-- ======== STEP 4 ======== -->
+  <div id="step4" class="hidden">
+    <div class="card">
+      <h2>Step 4 — Your AI Credit Score</h2>
+      <p class="subtitle">Calculated from your statement, financial profile, and responses.</p>
+
+      <div class="score-ring-wrap">
+        <svg width="220" height="220" viewBox="0 0 220 220">
+          <circle cx="110" cy="110" r="90" fill="none" stroke="var(--card2)" stroke-width="18"/>
+          <circle cx="110" cy="110" r="90" fill="none" id="scoreArc"
+            stroke="url(#scoreGrad)" stroke-width="18"
+            stroke-linecap="round"
+            stroke-dasharray="565" stroke-dashoffset="565"
+            transform="rotate(-90 110 110)" style="transition: stroke-dashoffset 1.5s ease;"/>
+          <defs>
+            <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#6c63ff"/>
+              <stop offset="100%" stop-color="#00d4aa"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="score-center">
+          <div class="score-number" id="scoreNum">—</div>
+          <div class="score-label">out of 1000</div>
+          <div id="riskBadge" class="risk-badge" style="margin-top:6px;"></div>
+        </div>
+      </div>
+
+      <div class="explain-box" id="scoreExplain"></div>
+
+      <h3 style="font-size:0.85rem;color:var(--muted);margin-bottom:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Score Breakdown</h3>
+      <div class="breakdown" id="breakdownArea"></div>
+
+      <button class="btn btn-primary btn-full" id="toStep5Btn" style="margin-top:4px;">
+        View Full Insights Report →
+      </button>
+    </div>
+  </div>
+
+  <!-- ======== STEP 5 ======== -->
+  <div id="step5" class="hidden">
+    <div class="card">
+      <h2>Step 5 — Insights Report</h2>
+      <p class="subtitle">Personalized analysis based on your full financial picture.</p>
+
+      <div id="strengthsSection" class="insight-section"></div>
+      <div id="weaknessesSection" class="insight-section"></div>
+      <div id="improveSection" class="insight-section"></div>
+    </div>
+
+    <div class="restart-bar">
+      <button class="btn btn-secondary" id="restartBtn">↩ Start Over</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const state = {
+  fileUploaded: false,
+  usingSample: false,
+  statement: null,     // parsed statement data
+  financials: null,    // step 2 inputs
+  answers: [],         // step 3 chatbot answers
+  score: null,         // final score object
+};
+
+// ── Step nav ───────────────────────────────────────────────────────────────
+function setStep(n) {
+  for (let i = 1; i <= 5; i++) {
+    const dot = document.getElementById('sdot' + i);
+    dot.classList.remove('active', 'done');
+    if (i < n) dot.classList.add('done');
+    else if (i === n) dot.classList.add('active');
+  }
+}
+
+// ── Step 1: Upload ─────────────────────────────────────────────────────────
+const fileInput   = document.getElementById('fileInput');
+const uploadZone  = document.getElementById('uploadZone');
+const filePreview = document.getElementById('filePreview');
+const analyzeBtn  = document.getElementById('analyzeBtn');
+
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
+
+function handleFile(file) {
+  const icons = { pdf: '📄', csv: '📊', txt: '📝', xlsx: '📊' };
+  const ext = file.name.split('.').pop().toLowerCase();
+  document.getElementById('fileIcon').textContent = icons[ext] || '📄';
+  document.getElementById('fileName').textContent = file.name;
+  document.getElementById('fileSize').textContent = formatBytes(file.size);
+  filePreview.classList.remove('hidden');
+  state.fileUploaded = true;
+  state.usingSample = false;
+  analyzeBtn.disabled = false;
+  analyzeBtn.textContent = 'Analyze Statement →';
+}
+
+document.getElementById('fileRemove').addEventListener('click', () => {
+  filePreview.classList.add('hidden');
+  fileInput.value = '';
+  state.fileUploaded = false;
+  if (!state.usingSample) analyzeBtn.disabled = true;
+});
+
+document.getElementById('useSampleBtn').addEventListener('click', () => {
+  state.usingSample = true;
+  analyzeBtn.disabled = false;
+  analyzeBtn.textContent = 'Analyze Sample Statement →';
+  document.getElementById('useSampleBtn').textContent = '✅ Sample Statement Selected';
+});
+
+analyzeBtn.addEventListener('click', () => {
+  document.getElementById('step1').classList.add('hidden');
+  document.getElementById('step1loading').classList.remove('hidden');
+  setStep(1);
+  setTimeout(() => {
+    state.statement = generateStatement();
+    renderStatement(state.statement);
+    document.getElementById('step1loading').classList.add('hidden');
+    document.getElementById('step1summary').classList.remove('hidden');
+  }, 1600);
+});
+
+// ── Statement Generation ───────────────────────────────────────────────────
+function generateStatement() {
+  const months = ['Jan 2025','Feb 2025','Mar 2025','Apr 2025','May 2025','Jun 2025'];
+  const baseIncome = state.usingSample ? 5200 : randomBetween(3800, 7500);
+  const rows = months.map((m, i) => {
+    const income  = baseIncome + randomBetween(-400, 400);
+    const spend   = income * randomBetween(0.55, 0.85);
+    const net     = income - spend;
+    const overdraft = net < 0;
+    return { month: m, income, spend, net, overdraft };
+  });
+  const categories = [
+    { name: 'Housing / Rent',    pct: 0.30 },
+    { name: 'Groceries',         pct: 0.10 },
+    { name: 'Dining Out',        pct: 0.08 },
+    { name: 'Transport',         pct: 0.07 },
+    { name: 'Subscriptions',     pct: 0.04 },
+    { name: 'Healthcare',        pct: 0.03 },
+    { name: 'Entertainment',     pct: 0.05 },
+    { name: 'Utilities',         pct: 0.06 },
+  ];
+  const avgSpend = rows.reduce((s,r) => s + r.spend, 0) / rows.length;
+  const catData = categories.map(c => ({
+    name: c.name,
+    avg: avgSpend * c.pct * randomBetween(0.9, 1.1),
+    pct: c.pct,
+  }));
+  const avgIncome = rows.reduce((s,r) => s + r.income, 0) / rows.length;
+  const overdraftCount = rows.filter(r => r.overdraft).length;
+  const largeItems = randomBetween(0,1) > 0.5
+    ? [{ desc: 'One-time large purchase (electronics)', amount: randomBetween(800,2200) }]
+    : [];
+  return { months, rows, catData, avgIncome, avgSpend, overdraftCount, largeItems,
+    savingsRate: ((avgIncome - avgSpend) / avgIncome * 100),
+    spendRatio: avgSpend / avgIncome,
+  };
+}
+
+function renderStatement(s) {
+  document.getElementById('statementPeriod').textContent =
+    '6-Month Overview · Jan – Jun 2025' + (state.usingSample ? '  (Sample Data)' : '');
+
+  // Tiles
+  const grid = document.getElementById('summaryGrid');
+  const avgNet = s.rows.reduce((a,r) => a + r.net, 0) / s.rows.length;
+  grid.innerHTML = tile('Avg. Monthly Income', fmt(s.avgIncome), 'up')
+    + tile('Avg. Monthly Spending', fmt(s.avgSpend), 'down')
+    + tile('Avg. Net Cash Flow', fmt(avgNet), avgNet >= 0 ? 'up' : 'down')
+    + tile('Savings Rate', s.savingsRate.toFixed(1) + '%', s.savingsRate >= 15 ? 'up' : 'down')
+    + tile('Overdraft Months', s.overdraftCount, s.overdraftCount === 0 ? 'up' : 'down');
+
+  // Monthly table
+  const tbody = document.querySelector('#monthlyTable tbody');
+  tbody.innerHTML = '';
+  s.rows.forEach(r => {
+    const netCls = r.net >= 0 ? 'positive' : 'negative';
+    const tag = r.overdraft
+      ? '<span class="tag tag-bad">Overdraft</span>'
+      : r.net > 500 ? '<span class="tag tag-ok">Surplus</span>'
+      : '<span class="tag tag-warn">Break-even</span>';
+    tbody.innerHTML += `<tr>
+      <td>${r.month}</td>
+      <td class="positive">${fmt(r.income)}</td>
+      <td class="negative">${fmt(r.spend)}</td>
+      <td class="${netCls}">${fmt(r.net)}</td>
+      <td>${tag}</td>
+    </tr>`;
+  });
+
+  // Categories
+  const ctbody = document.querySelector('#catTable tbody');
+  ctbody.innerHTML = '';
+  s.catData.forEach(c => {
+    const pct = (c.avg / s.avgIncome * 100).toFixed(1);
+    ctbody.innerHTML += `<tr>
+      <td>${c.name}</td>
+      <td>${fmt(c.avg)}</td>
+      <td>${pct}%</td>
+    </tr>`;
+  });
+
+  // Irregularities
+  const irr = document.getElementById('irregularitiesBox');
+  const flags = [];
+  if (s.overdraftCount > 0)
+    flags.push(`⚠️ ${s.overdraftCount} month(s) with overdraft detected.`);
+  if (s.spendRatio > 0.8)
+    flags.push(`⚠️ Spending-to-income ratio is high (${(s.spendRatio*100).toFixed(0)}%).`);
+  if (s.largeItems.length)
+    s.largeItems.forEach(l => flags.push(`⚠️ Large one-off: ${l.desc} (${fmt(l.amount)})`));
+  if (flags.length) {
+    irr.innerHTML = flags.map(f => `<div class="alert">${f}</div>`).join('');
+  } else {
+    irr.innerHTML = `<div class="alert" style="background:rgba(0,212,170,0.08);border-color:rgba(0,212,170,0.3);color:var(--low);">✅ No significant irregularities detected.</div>`;
+  }
+}
+
+document.getElementById('toStep2Btn').addEventListener('click', () => {
+  document.getElementById('step1summary').classList.add('hidden');
+  document.getElementById('step2').classList.remove('hidden');
+  setStep(2);
+});
+
+// ── Step 2: Financials ─────────────────────────────────────────────────────
+document.getElementById('toStep3Btn').addEventListener('click', () => {
+  const income = parseFloat(document.getElementById('annualIncome').value);
+  const savings = parseFloat(document.getElementById('totalSavings').value);
+  const investments = parseFloat(document.getElementById('totalInvestments').value);
+  const debt = parseFloat(document.getElementById('totalDebt').value);
+
+  if (!income || isNaN(income)) {
+    alert('Please enter at least your annual income.');
+    return;
+  }
+  state.financials = {
+    income: income || 0,
+    savings: savings || 0,
+    investments: investments || 0,
+    debt: debt || 0,
+  };
+  document.getElementById('step2').classList.add('hidden');
+  document.getElementById('step3').classList.remove('hidden');
+  setStep(3);
+  startChat();
+});
+
+// ── Step 3: Chatbot ────────────────────────────────────────────────────────
+const questions = [
+  {
+    q: 'How stable is your employment?',
+    opts: ['Very stable', 'Stable', 'Somewhat unstable', 'Unstable'],
+    scores: [100, 75, 40, 10],
+  },
+  {
+    q: 'Do you usually pay your bills on time?',
+    opts: ['Always', 'Usually', 'Sometimes', 'Rarely'],
+    scores: [100, 70, 35, 5],
+  },
+  {
+    q: 'How would you describe your budgeting habits?',
+    opts: ['Very disciplined', 'Disciplined', 'Loose', 'Chaotic'],
+    scores: [100, 70, 35, 5],
+  },
+];
+
+let chatStep = 0;
+const chatArea = document.getElementById('chatArea');
+
+function startChat() {
+  chatArea.innerHTML = '';
+  chatStep = 0;
+  state.answers = [];
+  setTimeout(() => addBotMsg(questions[0].q, questions[0].opts, 0), 400);
+}
+
+function addBotMsg(text, opts, qIdx) {
+  const msg = document.createElement('div');
+  msg.className = 'chat-msg';
+  const optsHtml = opts
+    ? `<div class="options-row">${opts.map((o,i) =>
+        `<button class="option-btn" data-qi="${qIdx}" data-oi="${i}" data-val="${o}">${o}</button>`
+      ).join('')}</div>`
+    : '';
+  msg.innerHTML = `
+    <div class="chat-avatar bot-avatar">🤖</div>
+    <div class="chat-bubble bot-bubble">${text}${optsHtml}</div>`;
+  chatArea.appendChild(msg);
+  chatArea.scrollTop = chatArea.scrollHeight;
+
+  if (opts) {
+    msg.querySelectorAll('.option-btn').forEach(btn => {
+      btn.addEventListener('click', () => handleAnswer(btn));
+    });
+  }
+}
+
+function handleAnswer(btn) {
+  const qi = parseInt(btn.dataset.qi);
+  const val = btn.dataset.val;
+  const oi = parseInt(btn.dataset.oi);
+
+  // Disable all opts in that bubble
+  btn.closest('.options-row').querySelectorAll('.option-btn').forEach(b => {
+    b.disabled = true;
+    if (b === btn) b.classList.add('selected');
+  });
+
+  state.answers[qi] = { val, score: questions[qi].scores[oi] };
+
+  // User bubble
+  const userMsg = document.createElement('div');
+  userMsg.className = 'chat-msg user';
+  userMsg.innerHTML = `
+    <div class="chat-avatar user-avatar">👤</div>
+    <div class="chat-bubble user-bubble">${val}</div>`;
+  chatArea.appendChild(userMsg);
+  chatArea.scrollTop = chatArea.scrollHeight;
+
+  chatStep++;
+
+  setTimeout(() => {
+    if (chatStep < questions.length) {
+      addBotMsg(questions[chatStep].q, questions[chatStep].opts, chatStep);
+    } else {
+      addBotMsg("Thanks! I now have everything I need. Calculating your score...", null, -1);
+      setTimeout(() => {
+        document.getElementById('step3').classList.add('hidden');
+        document.getElementById('step4').classList.remove('hidden');
+        setStep(4);
+        computeScore();
+      }, 1200);
+    }
+  }, 400);
+}
+
+// ── Step 4: Score ──────────────────────────────────────────────────────────
+function computeScore() {
+  const s = state.statement;
+  const f = state.financials;
+  const a = state.answers;
+
+  // Bank statement metrics (40%)
+  const incomeConsistency = (() => {
+    const vals = s.rows.map(r => r.income);
+    const mean = vals.reduce((a,b)=>a+b,0)/vals.length;
+    const std = Math.sqrt(vals.map(v=>(v-mean)**2).reduce((a,b)=>a+b,0)/vals.length);
+    const cv = std / mean; // coefficient of variation
+    return Math.max(0, 100 - cv * 300);
+  })();
+  const spendScore    = Math.max(0, 100 - (s.spendRatio - 0.4) * 200);
+  const savingsScore  = Math.min(100, s.savingsRate * 4);
+  const overdraftScore = Math.max(0, 100 - s.overdraftCount * 25);
+  const statementScore = (incomeConsistency * 0.3 + spendScore * 0.3 + savingsScore * 0.2 + overdraftScore * 0.2);
+
+  // User financial inputs (40%)
+  const dti = f.debt / (f.income || 1);  // debt to income
+  const dtiScore = Math.max(0, 100 - dti * 150);
+  const assets = f.savings + f.investments;
+  const assetScore = Math.min(100, (assets / (f.income || 1)) * 80);
+  const netWorthDir = assets > f.debt ? 100 : Math.max(0, 50 - (f.debt - assets) / (f.income||1) * 30);
+  const incomeScore = Math.min(100, (f.income / 80000) * 80 + 20);
+  const financialScore = (dtiScore * 0.35 + assetScore * 0.25 + netWorthDir * 0.2 + incomeScore * 0.2);
+
+  // Chatbot (20%)
+  const chatScore = a.length
+    ? a.reduce((sum, ans) => sum + (ans?.score || 0), 0) / a.length
+    : 70;
+
+  const raw = statementScore * 0.40 + financialScore * 0.40 + chatScore * 0.20;
+  const finalScore = Math.round(Math.min(1000, Math.max(200, raw * 10)));
+
+  const risk = finalScore >= 700 ? 'Low' : finalScore >= 500 ? 'Medium' : 'High';
+
+  state.score = {
+    finalScore, risk,
+    statementScore: Math.round(statementScore),
+    financialScore: Math.round(financialScore),
+    chatScore: Math.round(chatScore),
+    incomeConsistency: Math.round(incomeConsistency),
+    spendScore: Math.round(spendScore),
+    savingsScore: Math.round(savingsScore),
+    overdraftScore: Math.round(overdraftScore),
+    dtiScore: Math.round(dtiScore),
+    assetScore: Math.round(assetScore),
+  };
+
+  renderScore(state.score);
+}
+
+function renderScore(sc) {
+  // Ring
+  const arc = document.getElementById('scoreArc');
+  const pct = sc.finalScore / 1000;
+  const circumference = 565;
+  setTimeout(() => {
+    arc.style.strokeDashoffset = circumference * (1 - pct);
+    arc.style.stroke = sc.risk === 'Low' ? 'url(#scoreGrad)'
+      : sc.risk === 'Medium' ? '#f7b731' : '#ff6b6b';
+  }, 100);
+
+  // Counter animation
+  const numEl = document.getElementById('scoreNum');
+  numEl.style.color = sc.risk === 'Low' ? 'var(--low)' : sc.risk === 'Medium' ? '#f7b731' : 'var(--high)';
+  let count = 0;
+  const target = sc.finalScore;
+  const step = Math.ceil(target / 60);
+  const interval = setInterval(() => {
+    count = Math.min(count + step, target);
+    numEl.textContent = count;
+    if (count >= target) clearInterval(interval);
+  }, 25);
+
+  // Risk badge
+  const rb = document.getElementById('riskBadge');
+  rb.textContent = sc.risk + ' Risk';
+  rb.className = 'risk-badge risk-' + sc.risk.toLowerCase();
+
+  // Explanation
+  const explain = genExplanation(sc);
+  document.getElementById('scoreExplain').textContent = explain;
+
+  // Breakdown bars
+  const breakdown = document.getElementById('breakdownArea');
+  const bars = [
+    { label: 'Income Consistency',    val: sc.incomeConsistency, color: '#6c63ff' },
+    { label: 'Spending Control',       val: sc.spendScore,       color: '#6c63ff' },
+    { label: 'Savings Rate',           val: sc.savingsScore,     color: '#6c63ff' },
+    { label: 'No Overdrafts',          val: sc.overdraftScore,   color: '#6c63ff' },
+    { label: 'Debt-to-Income',         val: sc.dtiScore,         color: '#00d4aa' },
+    { label: 'Asset Strength',         val: sc.assetScore,       color: '#00d4aa' },
+    { label: 'Employment & Habits',    val: sc.chatScore,        color: '#f7b731' },
+  ];
+  breakdown.innerHTML = bars.map(b => `
+    <div class="breakdown-row">
+      <div class="breakdown-label">${b.label}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:0%;background:${b.color}" data-target="${b.val}"></div>
+      </div>
+      <div class="breakdown-val">${b.val}</div>
+    </div>`).join('');
+  setTimeout(() => {
+    breakdown.querySelectorAll('.bar-fill').forEach(el => {
+      el.style.width = el.dataset.target + '%';
+    });
+  }, 200);
+}
+
+function genExplanation(sc) {
+  const s = state.statement;
+  const f = state.financials;
+  const parts = [];
+  if (sc.statementScore >= 70) parts.push('strong bank statement metrics');
+  else if (sc.statementScore >= 50) parts.push('moderate cash flow patterns');
+  else parts.push('concerning cash flow patterns');
+  if (f.debt / (f.income||1) < 0.3) parts.push('a healthy debt-to-income ratio');
+  else if (f.debt / (f.income||1) < 0.6) parts.push('a moderate debt load');
+  else parts.push('a high debt burden');
+  if (sc.chatScore >= 80) parts.push('excellent financial behaviors');
+  else if (sc.chatScore >= 55) parts.push('reasonable financial habits');
+  else parts.push('financial habits that need improvement');
+  return `Your score of ${sc.finalScore} reflects ${parts.join(', ')}. ` +
+    (sc.finalScore >= 700 ? 'You present a low credit risk profile overall.'
+    : sc.finalScore >= 500 ? 'You present a medium risk level with room to strengthen your profile.'
+    : 'There are significant areas to address to lower your credit risk.');
+}
+
+document.getElementById('toStep5Btn').addEventListener('click', () => {
+  document.getElementById('step4').classList.add('hidden');
+  document.getElementById('step5').classList.remove('hidden');
+  setStep(5);
+  renderInsights();
+});
+
+// ── Step 5: Insights ───────────────────────────────────────────────────────
+function renderInsights() {
+  const sc = state.score;
+  const s  = state.statement;
+  const f  = state.financials;
+  const a  = state.answers;
+
+  // Strengths
+  const strengths = [];
+  if (sc.incomeConsistency >= 70) strengths.push({ icon: '💰', text: 'Consistent monthly income with minimal variation — lenders value predictability.' });
+  if (sc.savingsScore >= 60) strengths.push({ icon: '🏦', text: `Solid savings rate of ${s.savingsRate.toFixed(1)}% — building a healthy financial buffer.` });
+  if (sc.overdraftScore === 100) strengths.push({ icon: '✅', text: 'Zero overdrafts detected across your statement — excellent account management.' });
+  if (f.savings + f.investments > f.income * 0.5) strengths.push({ icon: '📈', text: 'Strong asset base relative to income — positive net worth trajectory.' });
+  if (a[0]?.score >= 75) strengths.push({ icon: '💼', text: 'Stable employment history reduces income disruption risk.' });
+  if (a[1]?.score >= 70) strengths.push({ icon: '📅', text: 'Reliable bill payment history is one of the strongest indicators of creditworthiness.' });
+  if (strengths.length === 0) strengths.push({ icon: '🌱', text: 'You have a foundation to build on — small consistent improvements will compound quickly.' });
+
+  // Weaknesses
+  const weaknesses = [];
+  if (sc.spendScore < 55) weaknesses.push({ icon: '⚠️', text: `High spending-to-income ratio (${(s.spendRatio*100).toFixed(0)}%) leaves little margin for savings or emergencies.` });
+  if (s.overdraftCount > 0) weaknesses.push({ icon: '🔴', text: `${s.overdraftCount} overdraft month(s) detected — this signals cash flow strain to lenders.` });
+  if (f.debt / (f.income||1) > 0.4) weaknesses.push({ icon: '💳', text: `Debt-to-income ratio of ${(f.debt/f.income*100).toFixed(0)}% is above the recommended 36% threshold.` });
+  if (a[2]?.score < 50) weaknesses.push({ icon: '📊', text: 'Loose or chaotic budgeting habits increase financial unpredictability.' });
+  if (f.savings + f.investments < f.income * 0.25) weaknesses.push({ icon: '📉', text: 'Low asset reserves relative to income — limited cushion in case of financial shocks.' });
+  if (weaknesses.length === 0) weaknesses.push({ icon: '🔍', text: 'No critical weaknesses found — focus on maintaining current positive habits.' });
+
+  // Improvements
+  const improvements = [];
+  if (sc.spendScore < 70)
+    improvements.push({ title: 'Reduce Discretionary Spending', desc: `Trim dining, entertainment, and subscriptions. Targeting a ${Math.max(10, (s.spendRatio*100 - 10).toFixed(0))}% spending ratio would meaningfully improve your score.` });
+  if (f.debt > 0)
+    improvements.push({ title: 'Accelerate Debt Paydown', desc: 'Use the avalanche method — pay minimums on all debts while putting extra funds toward the highest-interest balance first. Every 10% reduction in DTI ratio improves your creditworthiness.' });
+  if (s.savingsRate < 15)
+    improvements.push({ title: 'Build Your Emergency Fund', desc: 'Aim to save at least 15–20% of monthly income. Start with a $1,000 buffer, then work toward 3–6 months of expenses.' });
+  if (a[1]?.score < 70)
+    improvements.push({ title: 'Set Up Automatic Bill Payments', desc: 'Payment history is the single most powerful factor in any credit model. Automate recurring bills to eliminate late payments entirely.' });
+  if (improvements.length < 3)
+    improvements.push({ title: 'Diversify Your Investments', desc: 'If debt is under control, begin contributing regularly to index funds or retirement accounts. Even $100/month compounded over years significantly improves your asset score.' });
+
+  // Render
+  const strEl = document.getElementById('strengthsSection');
+  strEl.innerHTML = `<h3>✅ Key Strengths</h3>`
+    + strengths.slice(0,4).map(s => `<div class="insight-item"><span class="insight-icon">${s.icon}</span><span>${s.text}</span></div>`).join('');
+
+  const weakEl = document.getElementById('weaknessesSection');
+  weakEl.innerHTML = `<h3>⚠️ Key Weaknesses</h3>`
+    + weaknesses.slice(0,4).map(w => `<div class="insight-item"><span class="insight-icon">${w.icon}</span><span>${w.text}</span></div>`).join('');
+
+  const impEl = document.getElementById('improveSection');
+  impEl.innerHTML = `<h3>🚀 How to Improve Your Score</h3><div class="improve-list">`
+    + improvements.slice(0,3).map((item, i) => `
+      <div class="improve-item">
+        <div class="improve-num">${i+1}</div>
+        <div><strong>${item.title}</strong><br><span style="color:var(--muted)">${item.desc}</span></div>
+      </div>`).join('')
+    + `</div>`;
+}
+
+// ── Restart ────────────────────────────────────────────────────────────────
+document.getElementById('restartBtn').addEventListener('click', () => {
+  Object.assign(state, { fileUploaded:false, usingSample:false, statement:null, financials:null, answers:[], score:null });
+  document.querySelectorAll('[id^="step"]').forEach(el => el.classList.add('hidden'));
+  document.getElementById('step1').classList.remove('hidden');
+  document.getElementById('filePreview').classList.add('hidden');
+  document.getElementById('fileInput').value = '';
+  document.getElementById('useSampleBtn').textContent = '✨ Use a Sample Statement (Demo)';
+  analyzeBtn.disabled = true;
+  analyzeBtn.textContent = 'Analyze Statement →';
+  ['annualIncome','totalSavings','totalInvestments','totalDebt'].forEach(id => document.getElementById(id).value = '');
+  setStep(1);
+});
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function fmt(n) {
+  return '$' + Math.abs(n).toLocaleString('en-US', {maximumFractionDigits:0});
+}
+function formatBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+function tile(label, value, dir) {
+  return `<div class="summary-tile">
+    <div class="label">${label}</div>
+    <div class="value ${dir}">${value}</div>
+  </div>`;
+}
+function randomBetween(min, max) {
+  return Math.random() * (max - min) + min;
+}
+</script>
+</body>
+</html>
